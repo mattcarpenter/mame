@@ -34,6 +34,13 @@
 #include "rendutil.h"
 #include "vector.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define FLT_EPSILON 1E-5
 
@@ -146,6 +153,11 @@ vector_device::vector_device(const machine_config &mconfig, const char *tag, dev
 {
 }
 
+vector_device::~vector_device()
+{
+	unlink("vector_fifo");
+}
+
 float vector_device::m_flicker = 0.0f;
 float vector_device::m_beam_width_min = 0.0f;
 float vector_device::m_beam_width_max = 0.0f;
@@ -164,6 +176,10 @@ void vector_device::device_start()
 
 	/* allocate memory for tables */
 	m_vector_list = make_unique_clear<point[]>(MAX_POINTS);
+
+	/* create a named pipe for streaming vector data*/
+	mkfifo("vector_fifo", 0666);
+	m_f = fopen("vector_fifo", "w");
 }
 
 void vector_device::set_flicker(float newval)
@@ -252,6 +268,14 @@ void vector_device::add_point(int x, int y, rgb_t color, int intensity)
 		m_vector_index--;
 		logerror("*** Warning! Vector list overflow!\n");
 	}
+
+	/*FILE *fp;
+	char buffer[255];
+	sprintf(buffer, "x: %d y: %d \n", x, y);
+
+	fp = fopen("out.txt", "a");
+	fputs(buffer, fp);
+	fclose(fp);*/
 }
 
 
@@ -362,6 +386,7 @@ UINT32 vector_device::screen_update(screen_device &screen, bitmap_rgb32 &bitmap,
 
 			if (curpoint->intensity != 0 && !render_clip_line(&coords, &clip))
 			{
+				fprintf(m_f, "%f,%f,%f,%f", coords.x0, coords.y0, coords.x1, coords.y1);
 				screen.container().add_line(
 					coords.x0, coords.y0, coords.x1, coords.y1,
 					beam_width,

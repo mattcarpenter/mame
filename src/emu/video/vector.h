@@ -38,7 +38,8 @@ public:
 	// construction/destruction
 	vector_device(const machine_config &mconfig, const char *tag, device_t *owner, UINT32 clock);
 	vector_device(const machine_config &mconfig, device_type type, const char *name, const char *tag, device_t *owner, UINT32 clock, const char *shortname, const char *source);
-
+	~vector_device();
+	
 	UINT32 screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect);
 	void clear_list();
 
@@ -69,6 +70,7 @@ private:
 	static int m_vector_index;
 	int m_min_intensity;
 	int m_max_intensity;
+	FILE* m_f;
 
 	float normalized_sigmoid(float n, float k);
 };
